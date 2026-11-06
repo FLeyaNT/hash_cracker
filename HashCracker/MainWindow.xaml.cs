@@ -3,10 +3,8 @@ using System.Windows;
 using System.Linq;
 using System.Windows.Input;
 using System.ComponentModel;
-using System.IO;
 using HashCracker.Models;
 using HashCracker.Services;
-using Microsoft.Win32;
 
 namespace HashCracker
 {
@@ -17,8 +15,6 @@ namespace HashCracker
         private string _customAlphabet = "";
         private bool _isCustomAlphabet;
         private bool _closeRequested;
-        private bool _savingResults;
-        private readonly List<ExperimentRecord> _sessionResults = new();
 
         public MainWindow()
         {
@@ -160,7 +156,6 @@ namespace HashCracker
             ProgressIndicator.IsIndeterminate = true;
             StartButton.IsEnabled = false;
             StopButton.IsEnabled = true;
-            SaveResultsButton.IsEnabled = false;
 
             _forcer = new BruteForcer();
 
@@ -193,17 +188,6 @@ namespace HashCracker
                     _ => "Не найдено: диапазон проверен"
                 };
 
-                var record = new ExperimentRecord(startedAt, type, hash, minLen, maxLen, threads, result);
-                _sessionResults.Add(record);
-                try
-                {
-                    await CsvResultStore.AppendAsync(CsvResultStore.DefaultPath, record);
-                    LogBox.AppendText($"Результат сохранён: {CsvResultStore.DefaultPath}\n");
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    LogBox.AppendText($"Не удалось автоматически сохранить CSV: {ex.Message}\nРезультаты сеанса можно сохранить кнопкой «Сохранить CSV».\n");
-                }
             }
             catch (Exception ex)
             {
@@ -215,7 +199,6 @@ namespace HashCracker
                 ProgressIndicator.IsIndeterminate = false;
                 StartButton.IsEnabled = true;
                 StopButton.IsEnabled = false;
-                SaveResultsButton.IsEnabled = _sessionResults.Count > 0;
                 _forcer = null;
                 LogBox.ScrollToEnd();
                 if (_closeRequested) Close();
@@ -229,54 +212,15 @@ namespace HashCracker
             StatusText.Text = "Остановка: ожидается завершение текущих проверок...";
         }
 
-        private async void SaveResultsButton_Click(object sender, RoutedEventArgs e)
-        {
-            var dialog = new SaveFileDialog
-            {
-                Title = "Сохранить результаты текущего сеанса",
-                Filter = "CSV (*.csv)|*.csv",
-                FileName = $"HashCracker-{DateTime.Now:yyyyMMdd-HHmmss}.csv",
-                DefaultExt = ".csv",
-                AddExtension = true
-            };
-            if (dialog.ShowDialog(this) != true) return;
-            if (string.Equals(Path.GetFullPath(dialog.FileName), Path.GetFullPath(CsvResultStore.DefaultPath), StringComparison.OrdinalIgnoreCase))
-            {
-                MessageBox.Show(this, "Выберите другой файл: этот путь занят общей историей запусков.", "Сохранение CSV",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-            SaveResultsButton.IsEnabled = false;
-            StartButton.IsEnabled = false;
-            _savingResults = true;
-            try
-            {
-                await CsvResultStore.SaveAsync(dialog.FileName, _sessionResults.ToArray());
-                LogBox.AppendText($"Результаты сеанса сохранены: {dialog.FileName}\n");
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                MessageBox.Show(this, $"Не удалось сохранить CSV: {ex.Message}", "Сохранение CSV",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            finally
-            {
-                _savingResults = false;
-                StartButton.IsEnabled = _forcer is null;
-                SaveResultsButton.IsEnabled = _forcer is null && _sessionResults.Count > 0;
-                if (_closeRequested && _forcer is null) Close();
-            }
-        }
-
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
-            if (_forcer is null && !_savingResults) return;
+            if (_forcer is null) return;
             e.Cancel = true;
             _closeRequested = true;
             _forcer?.Cancel();
             StopButton.IsEnabled = false;
-            StatusText.Text = "Завершение работы и сохранение результатов...";
+            StatusText.Text = "Остановка перед закрытием...";
         }
     }
 }

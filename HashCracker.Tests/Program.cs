@@ -4,7 +4,6 @@ using System.Text;
 using HashCracker.Models;
 using HashCracker.Services;
 using Konscious.Security.Cryptography;
-using Microsoft.VisualBasic.FileIO;
 
 int passed = 0;
 int threads = Math.Min(4, Environment.ProcessorCount);
@@ -242,46 +241,6 @@ await Test("Concurrent runs on the same instance are rejected", async () =>
         catch (InvalidOperationException) { }
     }
     finally { forcer.Cancel(); await first.WaitAsync(TimeSpan.FromSeconds(5)); }
-});
-
-await Test("CSV preserves parameters, Unicode, quotes, delimiters, newlines and append history", async () =>
-{
-    string directory = Path.Combine(Path.GetTempPath(), "HashCracker-tests-" + Guid.NewGuid().ToString("N"));
-    Directory.CreateDirectory(directory);
-    try
-    {
-        string history = Path.Combine(directory, "history.csv"), export = Path.Combine(directory, "export.csv");
-        var record = new ExperimentRecord(DateTimeOffset.Parse("2026-11-05T18:30:00+03:00"), HashAlgorithmType.MD5,
-            Md5("я;\"\n"), 1, 3, threads, new CrackResult
-            {
-                Status = CrackStatus.Found, Alphabet = "я;\"\n", Password = "я;\"\n", AttemptsCount = 17,
-                TotalCombinations = 84, WorkerCount = threads, ElapsedSeconds = 0.123456789
-            });
-        await CsvResultStore.AppendAsync(history, record);
-        await CsvResultStore.AppendAsync(history, record);
-        await CsvResultStore.SaveAsync(export, new[] { record, record });
-        foreach (string path in new[] { history, export })
-        {
-            using var parser = new TextFieldParser(path, Encoding.UTF8) { HasFieldsEnclosedInQuotes = true, TrimWhiteSpace = false };
-            parser.SetDelimiters(";");
-            Check(parser.ReadFields()!.Length == 13, "Wrong CSV header");
-            for (int row = 0; row < 2; row++)
-            {
-                string[] fields = parser.ReadFields()!;
-                Check(fields.Length == 13 && fields[3] == record.Result.Alphabet && fields[12] == record.Result.Password, "CSV roundtrip failed");
-                Check(fields[8] == "Found" && fields[9] == "0.123456789" && fields[10] == "17", "CSV values changed");
-            }
-            Check(parser.EndOfData, "Duplicate headers or extra rows");
-        }
-    }
-    finally
-    {
-        string resolved = Path.GetFullPath(directory);
-        string tempRoot = Path.GetFullPath(Path.GetTempPath());
-        if (Path.GetDirectoryName(resolved) == tempRoot.TrimEnd(Path.DirectorySeparatorChar) &&
-            Path.GetFileName(resolved).StartsWith("HashCracker-tests-", StringComparison.Ordinal))
-            Directory.Delete(resolved, true);
-    }
 });
 
 Console.WriteLine($"All {passed} test groups passed.");

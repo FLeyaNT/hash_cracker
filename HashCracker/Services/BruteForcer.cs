@@ -23,7 +23,7 @@ public partial class BruteForcer
     public void Cancel() => Volatile.Write(ref _cancelRequested, 1);
 
     public async Task<CrackResult> RunAsync(HashAlgorithmType type, string targetHash, string alphabet,
-        int minLen, int maxLen, int threadCount, Action<string> log, IProgress<double>? progress = null)
+        int minLen, int maxLen, int threadCount, Action<string> log)
     {
         if (Interlocked.CompareExchange(ref _running, 1, 0) != 0)
             throw new InvalidOperationException("Этот переборщик уже выполняет поиск.");
@@ -35,7 +35,6 @@ public partial class BruteForcer
             int workerCount = Math.Min(threadCount, search.Symbols.Length);
             int maxWorkersUsed = 0;
             var stopwatch = Stopwatch.StartNew();
-            using var timer = CreateProgressTimer(progress, search.Total);
 
             // Каждую длину полностью проверяем перед переходом к следующей.
             for (int length = minLen; length <= maxLen; length++)
@@ -203,10 +202,4 @@ public partial class BruteForcer
         };
     }
 
-    private Timer? CreateProgressTimer(IProgress<double>? progress, long total)
-    {
-        if (progress is null) return null;
-        return new Timer(_ => progress.Report(
-            Math.Min(100.0, (double)Interlocked.Read(ref _attempts) / total * 100)), null, 0, 300);
-    }
 }
