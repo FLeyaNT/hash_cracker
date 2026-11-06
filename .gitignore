@@ -1,0 +1,26 @@
+# Visual Studio and user-specific settings
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# Build and test output
+**/bin/
+**/obj/
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Local experiment results and temporary files
+results.csv
+HashCracker-*.csv
+tmp/
+*.log
+
+# Local secrets
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12

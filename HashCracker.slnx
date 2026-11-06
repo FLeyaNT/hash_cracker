@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="HashCracker/HashCracker.csproj" />
+  <Project Path="HashCracker.Tests/HashCracker.Tests.csproj" />
+</Solution>

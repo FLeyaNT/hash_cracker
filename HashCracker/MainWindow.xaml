@@ -1,0 +1,90 @@
+﻿<Window x:Class="HashCracker.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Hash Cracker — Лабораторная работа" Height="600" Width="700">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Алгоритм -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="Алгоритм:" Width="120" VerticalAlignment="Center"/>
+            <ComboBox x:Name="AlgorithmBox" Width="150" SelectedIndex="0">
+                <ComboBoxItem Content="MD5"/>
+                <ComboBoxItem Content="SHA-1"/>
+                <ComboBoxItem Content="bcrypt"/>
+                <ComboBoxItem Content="Argon2id"/>
+            </ComboBox>
+        </StackPanel>
+
+        <!-- Хэш -->
+        <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,0,0,10">
+            <TextBlock Text="Хэш:" Width="120" VerticalAlignment="Center"/>
+            <TextBox x:Name="HashBox" Width="530"/>
+        </StackPanel>
+
+        <!-- Алфавит -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Алфавит:" Width="120" VerticalAlignment="Center"/>
+                <ComboBox x:Name="AlphabetPresetBox" Width="530" IsEditable="False"
+                          DisplayMemberPath="Label" SelectionChanged="AlphabetPresetBox_SelectionChanged"/>
+            </StackPanel>
+            <TextBox x:Name="AlphabetBox" Margin="120,5,0,0" IsReadOnly="True"
+                     MaxLength="2048"
+                     TextWrapping="Wrap" ToolTip="Для ручного ввода выберите «Свой алфавит»"/>
+        </StackPanel>
+
+        <!-- Диапазон длины -->
+        <StackPanel Orientation="Horizontal" Grid.Row="3" Margin="0,0,0,10">
+            <TextBlock Text="Длина от / до:" Width="120" VerticalAlignment="Center"/>
+            <TextBox x:Name="MinLenBox" Width="40" Text="1"
+                     ToolTip="От 1 до 128 символов Unicode"
+                     PreviewTextInput="LengthBox_PreviewTextInput"
+                     PreviewKeyDown="LengthBox_PreviewKeyDown"
+                     DataObject.Pasting="LengthBox_Pasting"/>
+            <TextBlock Text=" — " VerticalAlignment="Center"/>
+            <TextBox x:Name="MaxLenBox" Width="40" Text="6"
+                     ToolTip="От 1 до 128 символов Unicode; число комбинаций не должно превышать предел счётчика"
+                     PreviewTextInput="LengthBox_PreviewTextInput"
+                     PreviewKeyDown="LengthBox_PreviewKeyDown"
+                     DataObject.Pasting="LengthBox_Pasting"/>
+        </StackPanel>
+
+        <!-- Потоки -->
+        <StackPanel Orientation="Horizontal" Grid.Row="4" Margin="0,0,0,10">
+            <TextBlock Text="Потоков:" Width="120" VerticalAlignment="Center"/>
+            <ComboBox x:Name="ThreadsBox" Width="60" IsEditable="False"
+                      ToolTip="От 1 до количества доступных логических процессоров"/>
+            <TextBlock x:Name="ProcessorInfoText" Margin="10,0,0,0" VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Кнопки -->
+        <StackPanel Orientation="Horizontal" Grid.Row="5" Margin="0,0,0,10">
+            <Button x:Name="StartButton" Content="Запустить перебор" Width="150" Height="30" Click="StartButton_Click"/>
+            <Button x:Name="StopButton" Content="Остановить" Width="100" Height="30" Margin="10,0,0,0" Click="StopButton_Click" IsEnabled="False"/>
+            <Button x:Name="SaveResultsButton" Content="Сохранить CSV" Width="130" Height="30" Margin="10,0,0,0"
+                    Click="SaveResultsButton_Click" IsEnabled="False" ToolTip="Сохранить результаты текущего сеанса"/>
+        </StackPanel>
+
+        <!-- Лог -->
+        <TextBox x:Name="LogBox" Grid.Row="6" Margin="0,0,0,10"
+                 IsReadOnly="True" VerticalScrollBarVisibility="Auto"
+                 TextWrapping="Wrap" FontFamily="Consolas"/>
+
+        <!-- Статус -->
+        <StackPanel Grid.Row="7" Orientation="Horizontal">
+            <TextBlock x:Name="StatusText" Text="Готово" FontWeight="Bold"/>
+            <ProgressBar x:Name="ProgressIndicator" Width="610
+                         " Height="15" Margin="20,0,0,0" IsIndeterminate="False"/>
+        </StackPanel>
+    </Grid>
+</Window>
