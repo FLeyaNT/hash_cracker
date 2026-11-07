@@ -4,7 +4,6 @@ using System.Text.RegularExpressions;
 
 namespace HashCracker.Services;
 
-// Эта часть того же класса отвечает только за проверку и подготовку входных данных.
 public partial class BruteForcer
 {
     public const int MaxPasswordLength = 128;
@@ -22,12 +21,10 @@ public partial class BruteForcer
     public static string NormalizeAlphabet(string alphabet)
     {
         if (string.IsNullOrEmpty(alphabet)) throw new ArgumentException("Введите хотя бы один символ алфавита.");
-        if (alphabet.Length > MaxAlphabetSymbols * 2)
-            throw new ArgumentException($"Алфавит слишком длинный. Допускается до {MaxAlphabetSymbols} уникальных символов.");
         try { _ = Utf8.GetByteCount(alphabet); }
         catch (EncoderFallbackException) { throw new ArgumentException("Алфавит содержит повреждённый символ Unicode."); }
 
-        var symbols = alphabet.EnumerateRunes().Distinct().ToArray();
+        var symbols = alphabet.Distinct().ToArray();
         if (symbols.Length > MaxAlphabetSymbols)
             throw new ArgumentException($"Допускается до {MaxAlphabetSymbols} уникальных символов алфавита.");
         return string.Concat(symbols.Select(r => r.ToString()));
@@ -47,7 +44,7 @@ public partial class BruteForcer
             throw new ArgumentException("Выберите число потоков от 1 до количества доступных логических процессоров.");
 
         alphabet = NormalizeAlphabet(alphabet);
-        string[] symbols = alphabet.EnumerateRunes().Select(r => r.ToString()).ToArray();
+        string[] symbols = alphabet.Select(r => r.ToString()).ToArray();
         byte[][] encoded = symbols.Select(Utf8.GetBytes).ToArray();
         long total = CalculateTotalCombinations(symbols.Length, minLen, maxLen);
         byte[]? target = null;
@@ -63,7 +60,6 @@ public partial class BruteForcer
                 break;
             case HashAlgorithmType.BCrypt:
                 ValidateBcrypt(targetHash);
-                // Не допускаем пароли, которые bcrypt обрежет до 72 байт UTF-8.
                 if (maxLen * encoded.Max(s => s.Length) > 72)
                     throw new ArgumentException("Для bcrypt максимальная длина с учётом UTF-8 не должна превышать 72 байта. Уменьшите длину или измените алфавит.");
                 break;

@@ -7,7 +7,6 @@ namespace HashCracker.Services;
 
 public enum HashAlgorithmType { MD5, SHA1, BCrypt, Argon2 }
 
-// Проверка параметров вынесена в BruteForcer.Validation.cs.
 public partial class BruteForcer
 {
     private int _running;
@@ -36,7 +35,6 @@ public partial class BruteForcer
             int maxWorkersUsed = 0;
             var stopwatch = Stopwatch.StartNew();
 
-            // Каждую длину полностью проверяем перед переходом к следующей.
             for (int length = minLen; length <= maxLen; length++)
             {
                 if (ShouldStop) break;
@@ -64,7 +62,6 @@ public partial class BruteForcer
 
     private async Task SearchLengthAsync(PreparedSearch search, int length, int workerCount)
     {
-        // Общая очередь первых символов начинается заново для каждой длины.
         _nextFirstSymbol = -1;
         var tasks = new Task[workerCount];
         for (int worker = 0; worker < workerCount; worker++)
@@ -85,7 +82,6 @@ public partial class BruteForcer
 
             while (!ShouldStop)
             {
-                // Interlocked выдаёт каждой задаче свой следующий символ без повторов.
                 int firstSymbol = Interlocked.Increment(ref _nextFirstSymbol);
                 if (firstSymbol >= search.Symbols.Length) break;
 
@@ -121,7 +117,6 @@ public partial class BruteForcer
         }
     }
 
-    // positions хранит индексы символов в алфавите, например [2, 0, 1] для "201".
     private static int WritePasswordBytes(PreparedSearch search, int[] positions, byte[] buffer)
     {
         int offset = 0;
@@ -136,7 +131,6 @@ public partial class BruteForcer
 
     private static bool MoveToNextSuffix(int[] positions, int alphabetSize)
     {
-        // Как счётчик: 00 → 01 → ... → 09 → 10. Первую позицию не меняем.
         for (int position = positions.Length - 1; position >= 1; position--)
         {
             positions[position]++;
@@ -178,8 +172,8 @@ public partial class BruteForcer
             MemorySize = parameters.MemoryKb,
             Iterations = parameters.Iterations
         };
-        return CryptographicOperations.FixedTimeEquals(
-            argon.GetBytes(parameters.ExpectedHash.Length), parameters.ExpectedHash);
+        byte[] computedHash = argon.GetBytes(parameters.ExpectedHash.Length);
+        return computedHash.AsSpan().SequenceEqual(parameters.ExpectedHash);
     }
 
     private CrackResult CreateResult(PreparedSearch search, double elapsedSeconds, int workersUsed)
